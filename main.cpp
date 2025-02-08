@@ -60,7 +60,7 @@ Node* general_search(const vector<vector<int>>& initial_state, int heuristic);
     }
 */
 
-Node* general_search(const vector<vector<int>>& initial_state, int heuristic) { // heuristic == 0 for uniform cost search, heuristic == 1 for misplaced tiles; heuristic == 2 for manhattan distance
+Node* general_search(const vector<vector<int>>& initial_state, int heuristic) { // heuristic == 1 for uniform cost search, heuristic == 2 for misplaced tiles; heuristic == 3 for manhattan distance
     // nodes = MAKE-QUEUE(MAKE-NODE(problem.INITIAL_STATE))
     using NodeComparator = function<bool(Node*, Node*)>;
     NodeComparator x = [](Node* a, Node* b) { return *a > *b; }; // expands lowest f score first
@@ -121,7 +121,7 @@ int manhattan_distance(const vector<vector<int>>& state) {
         for (int c = 0; c < 3; ++c) {
             if (state[r][c] == 0) continue; // heuristic does not take into account the blank (0) tile
             int target = state[r][c] - 1; 
-            int goal_row = target / 3, goal_col = target % 3; // use 3 herebecause there are 3 rows and 3 columns
+            int goal_row = target / 3, goal_col = target % 3; // use 3 here because there are 3 rows and 3 columns
             distance += abs(r - goal_row) + abs(c - goal_col); // |(current position) - (correct position)|
         }
     }
@@ -196,9 +196,9 @@ int main() {
 
     if (puzzle_choice == 1) { // trivial
         initial_state = {
-            {0, 2, 3},
-            {1, 5, 6},
-            {4, 7, 8}
+            {1, 2, 3},
+            {4, 5, 6},
+            {7, 8, 0}
         };
     }
     else if (puzzle_choice == 2) { // easy
@@ -217,13 +217,13 @@ int main() {
     }
     else if (puzzle_choice == 4) { // hard
         initial_state = {
-            {8, 7, 1},
-            {6, 2, 0},
-            {5, 4, 3}
+            {2, 7, 3},
+            {4, 6, 8},
+            {1, 5, 0}
         };
     }
     else if (puzzle_choice == 5) {
-        cout << "Enter your custom puzzle for a 3x3 puzzle problem. Please only enter valid configurations. (enter values row by row, separated by spaces) (use '0' for the blank tile) (hit ENTER after filling in the values): ";
+        cout << "Enter your custom puzzle for a 3x3 puzzle problem. Please only enter valid configurations. (enter values left to right, row by row, separated by spaces) (use '0' for the blank tile) (hit ENTER after filling in the values): ";
         
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -249,22 +249,22 @@ int main() {
     cin >> algo_choice;
 
     if (algo_choice == 1) {
-        cout << "Uniform Cost Search:\n";
+        cout << "Uniform Cost Search:" << endl;
         Node* ucs = general_search(initial_state, algo_choice);
         if (ucs) print_solution(ucs);
     }
     else if (algo_choice == 2) {
-        cout << "\nA* (Misplaced Tile Heuristic):\n";
+        cout << "A* (Misplaced Tile Heuristic):" << endl;
         Node* astar_misplaced = general_search(initial_state, algo_choice);
         if (astar_misplaced) print_solution(astar_misplaced);
     }
     else if (algo_choice == 3) {
-        cout << "\nA* (Manhattan Distance Heuristic):\n";
+        cout << "A* (Manhattan Distance Heuristic):" << endl;
         Node* astar_manhattan = general_search(initial_state, algo_choice);
         if (astar_manhattan) print_solution(astar_manhattan);
     }
     else {
-        cout << "Invalid choice. Exitting application." << endl;
+        cout << "Invalid choice. Exiting application." << endl;
         return -1;
     }
 
