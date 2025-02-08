@@ -2,36 +2,51 @@
 #include <vector>
 #include <queue>
 #include <functional>
+#include <unordered_set>
+#include <cmath>
+#include <algorithm>
+#include <chrono>
 
 using namespace std;
 
 // GLOBAL VARIABLES
 // explicit goal state
-const vector<vector<int>> GOAL_STATE = {{1, 2, 3}, {4, 5, 6}, {7, 8, 0}}; // can be hardcoded to expand or shrink to nxn puzzle problems
+const vector<vector<int>> GOAL_STATE = {{1, 2, 3}, {4, 5, 6}, {7, 8, 0}}; // can be hardcoded to expand or shrink to nxn puzzles
 
 // potential operators
-const vector<pair<int, int>> MOVES = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+const vector<pair<int, int>> MOVES = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}}; // operators for all sliding tiles puzzles
 
 struct Node {
     vector<vector<int>> state;
     int g, h; // g = cost, h = heuristic
+    int expanded_nodes_count; // keep track of expanded nodes count
     Node* parent;
 
     Node(vector<vector<int>> s, int g_cost, int h_cost, Node* p) 
         : state(s), g(g_cost), h(h_cost), parent(p) {}
 
-    int f() const { return g + h; } // f(n) = g(n) + h(n) // path score = cost of path so far + estimated path left til goal state based on heuristic // the lower the better
+    int f() const { return g + h; }
 
     bool operator>(const Node& other) const {
         return f() > other.f(); // overloaded in order to expand lowest f(n) node first
     }
 };
 
+
+
+
+
 // FUNCTION DECLARATIONS
 int misplaced_tiles(const vector<vector<int>>& state);
 int manhattan_distance(const vector<vector<int>>& state);
-// vector<Node*> expand(Node* node, int heuristic);
-// initial_state_gen(int seed);
+vector<Node*> expand(Node* node, int heuristic);
+pair<int, int> find_blank(const vector<vector<int>>& state);
+void print_solution(Node* node);
+Node* general_search(const vector<vector<int>>& initial_state, int heuristic);
+
+
+
+
 
 // FUNCTION DEFINITIONS
 /* general_search(problem, QUEUEING-FUNCTION) {
@@ -45,7 +60,7 @@ int manhattan_distance(const vector<vector<int>>& state);
     }
 */
 
-Node* general_search(const vector<vector<int>>& initial_state, int heuristic) { // heuristic == 1 for misplaced tiles; heuristic == 2 for manhattan distance
+Node* general_search(const vector<vector<int>>& initial_state, int heuristic) { // heuristic == 0 for uniform cost search, heuristic == 1 for misplaced tiles; heuristic == 2 for manhattan distance
     // nodes = MAKE-QUEUE(MAKE-NODE(problem.INITIAL_STATE))
     using NodeComparator = function<bool(Node*, Node*)>;
     NodeComparator x = [](Node* a, Node* b) { return *a > *b; }; // expands lowest f score first
@@ -53,20 +68,30 @@ Node* general_search(const vector<vector<int>>& initial_state, int heuristic) { 
 
     NodePriorityQueue nodes(x); // nodes = MAKE-QUEUE
     
-    int h_cost = (heuristic == 1) ? misplaced_tiles(initial_state) : manhattan_distance(initial_state); // h-cost is cost of new state (new_state) // 1 for misplaced tiles heuristic, 2 for manhattan distance heuristic (and for uniform cost search)
+    int h_cost = (heuristic == 1) ? 0 : (heuristic == 2) ? misplaced_tiles(initial_state) : manhattan_distance(initial_state);
     Node* root = new Node(initial_state, 0, h_cost, nullptr); // MAKE-NODE(problem.INITIAL_STATE)
     nodes.push(root);
+
+    int expanded_nodes = -1; // count of expanded nodes over the entirety of the algorithm // == -1 so that expanded nodes does not account for the initial state as an expanded node
+
+    auto start_time = std::chrono::high_resolution_clock::now();
 
     while (!nodes.empty()) { // loop do
         Node* node = nodes.top();
         nodes.pop();
 
-        if (node->state == GOAL_STATE) return node; // success!
+        expanded_nodes++;
 
+        if (node->state == GOAL_STATE) {
+            auto end_time = std::chrono::high_resolution_clock::now();
+            cout << "Time taken (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << endl;
+            cout << "Count of nodes expanded: " << expanded_nodes << endl;
+            return node; // success!
+        }
         // nodes = QUEUEING-FUNCTION(nodes, EXPAND(node, problem.OPERATORS))
-        /*for (Node* child : expand(node, heuristic)) { // EXPAND(node, problem.OPERATORS) // UNFINISHED
+        for (Node* child : expand(node, heuristic)) { // EXPAND(node, problem.OPERATORS)
             nodes.push(child);
-        }*/
+        }
     }
 
     return nullptr; // if EMPTY(nodes) then return "failure"
@@ -104,14 +129,120 @@ int manhattan_distance(const vector<vector<int>>& state) {
 }
 
 // generate child nodes by moving the blank tile
-/*vector<Node*> expand(Node* node, int heuristic) {
-    TODO;
-}*/
+vector<Node*> expand(Node* node, int heuristic) {
+    vector<Node*> children;
+    auto [zero_row, zero_col] = find_blank(node->state);
+
+    for (const auto& move : MOVES) {
+        int new_row = zero_row + move.first, new_col = zero_col + move.second;
+        if (new_row >= 0 && new_row < 3 && new_col >= 0 && new_col < 3) { // actual operators // checker to prevent invalid moves (when blank (0) tile is along a boundary)
+            vector<vector<int>> new_state = node->state;
+            swap(new_state[zero_row][zero_col], new_state[new_row][new_col]); // swaps blank (0) tile with the tile in the new position
+
+            int h_cost = (heuristic == 1) ? 0 : (heuristic == 2) ? misplaced_tiles(new_state) : manhattan_distance(new_state);
+            children.push_back(new Node(new_state, node->g+1, h_cost, node));
+        }
+    }
+    return children;
+}
+
+// returns the position of the blank (0) tile
+pair<int, int> find_blank(const vector<vector<int>>& state) {
+    for (int r = 0; r < 3; ++r) {
+        for (int c = 0; c < 3; ++c) {
+            if (state[r][c] == 0) return {r, c};
+        }
+    }
+    return {-1, -1}; // error
+}
+
+// prints the solution path
+void print_solution(Node* node) {
+    vector<vector<vector<int>>> path;
+    int count = -1; // == -1 so that root node (initial state) counts as depth 0
+
+    while (node) { // stores node states starting from goal state back to initial state
+        path.push_back(node->state);
+        node = node->parent;
+        count++;
+    }
+    
+    cout << "Depth of solution: " << count << endl;
+
+    reverse(path.begin(), path.end()); // reorders so that print shows solution path from initial state to goal state
+    for (const auto& state : path) {
+        for (const auto& row : state) {
+            for (int num : row) {
+                cout << to_string(num) << ' ';
+            }
+            cout << endl;
+        }
+        cout << "---------" << endl;
+    }
+}
 
 int main() {
-    
-    // initial_state_gen(int seed);
-	    // return only valid initial states (some initial states are impossible to solve)
+    cout << "Enter the number of the puzzle configuration you would like to choose to begin solving the 8 sliding tiles puzzle!" << endl;
+    cout << "1) Default puzzle" << endl;
+    cout << "2) Custom puzzle" << endl;
+
+    int puzzle_choice;
+    cin >> puzzle_choice;
+
+    vector<vector<int>> initial_state(3, vector<int>(3));
+
+    if (puzzle_choice == 1) {
+        initial_state = {
+            {1, 2, 3},
+            {4, 0, 5},
+            {6, 7, 8}
+        };
+    }
+    else if (puzzle_choice == 2) {
+        cout << "Enter your custom puzzle for a 3x3 puzzle problem. Please only enter valid configurations. (enter values row by row, separated by spaces) (use '0' for the blank tile) (hit ENTER after filling in the values): ";
+        
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                cin >> initial_state[i][j];
+            }
+        }
+    }
+    else {
+        cout << "Invalid choice. Default puzzle will be chosen." << endl;
+        initial_state = {
+            {1, 2, 3},
+            {4, 0, 5},
+            {6, 7, 8}
+        };
+    }
+
+    cout << "Enter the number of the algorithm that you would like to use to solve this puzzle." << endl;
+    cout << "1) Uniform cost search" << endl;
+    cout << "2) A star using misplaced tile heuristic" << endl;
+    cout << "3) A star using manhattan distance heuristic" << endl;
+
+    int algo_choice;
+    cin >> algo_choice;
+
+    if (algo_choice == 1) {
+        cout << "Uniform Cost Search:\n";
+        Node* ucs = general_search(initial_state, algo_choice);
+        if (ucs) print_solution(ucs);
+    }
+    else if (algo_choice == 2) {
+        cout << "\nA* (Misplaced Tile Heuristic):\n";
+        Node* astar_misplaced = general_search(initial_state, algo_choice);
+        if (astar_misplaced) print_solution(astar_misplaced);
+    }
+    else if (algo_choice == 3) {
+        cout << "\nA* (Manhattan Distance Heuristic):\n";
+        Node* astar_manhattan = general_search(initial_state, algo_choice);
+        if (astar_manhattan) print_solution(astar_manhattan);
+    }
+    else {
+        cout << "Invalid choice. Exitting application." << endl;
+        return -1;
+    }
 
     return 0;
 }
