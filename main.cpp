@@ -183,22 +183,46 @@ void print_solution(Node* node) {
 
 int main() {
     cout << "Enter the number of the puzzle configuration you would like to choose to begin solving the 8 sliding tiles puzzle!" << endl;
-    cout << "1) Default puzzle" << endl;
-    cout << "2) Custom puzzle" << endl;
+    cout << "1) Trivial puzzle" << endl;
+    cout << "2) Default easy puzzle" << endl;
+    cout << "3) Default medium puzzle" << endl;
+    cout << "4) Default hard puzzle" << endl;
+    cout << "5) Custom puzzle" << endl;
 
     int puzzle_choice;
     cin >> puzzle_choice;
 
     vector<vector<int>> initial_state(3, vector<int>(3));
 
-    if (puzzle_choice == 1) {
+    if (puzzle_choice == 1) { // trivial
+        initial_state = {
+            {0, 2, 3},
+            {1, 5, 6},
+            {4, 7, 8}
+        };
+    }
+    else if (puzzle_choice == 2) { // easy
+        initial_state = {
+            {1, 2, 3},
+            {4, 5, 6},
+            {0, 7, 8}
+        };
+    }
+    else if (puzzle_choice == 3) { // medium
         initial_state = {
             {1, 2, 3},
             {4, 0, 5},
             {6, 7, 8}
         };
     }
-    else if (puzzle_choice == 2) {
+    else if (puzzle_choice == 4) { // hard
+        initial_state = {
+            {8, 7, 1},
+            {6, 2, 0},
+            {5, 4, 3}
+        };
+    }
+    else if (puzzle_choice == 5) {
         cout << "Enter your custom puzzle for a 3x3 puzzle problem. Please only enter valid configurations. (enter values row by row, separated by spaces) (use '0' for the blank tile) (hit ENTER after filling in the values): ";
         
         for (int i = 0; i < 3; i++) {
