@@ -12,7 +12,7 @@ A* with the Misplaced Tile heuristic -
 performs a search in which chooses its next path to follow based on the f(n).
 Misplaced Tile heuristic: the count of the number of tiles that are not in their correct position.
 
-A* with the Manhattan Distance heurisitic -
+A* with the Manhattan Distance heuristic -
 performs a search in which chooses its next path to follow based on the f(n).
 Manhattan Distance heuristic: the aggregate count of the manhattan distances of each tile's current position and their correct position.
 Manhattan distance is calculated as: |x1 - x2| + |y1 - y2|.
