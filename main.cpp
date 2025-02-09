@@ -236,9 +236,9 @@ int main() {
     }
     else if (puzzle_choice == 4) { // hard
         initial_state = {
-            {2, 7, 3},
-            {4, 6, 8},
-            {1, 5, 0}
+            {6, 2, 0},
+            {4, 7, 1},
+            {5, 3, 8}
         };
     }
     else if (puzzle_choice == 5) {
