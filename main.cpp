@@ -5,6 +5,7 @@
 #include <cmath>
 #include <algorithm>
 #include <chrono>
+#include <unordered_set>
 
 using namespace std;
 
@@ -42,6 +43,7 @@ vector<Node*> expand(Node* node, int heuristic);
 pair<int, int> find_blank(const vector<vector<int>>& state);
 void print_solution(Node* node);
 Node* general_search(const vector<vector<int>>& initial_state, int heuristic);
+string state_to_string(const vector<vector<int>>& state);
 
 
 
@@ -66,6 +68,7 @@ Node* general_search(const vector<vector<int>>& initial_state, int heuristic) { 
     using NodePriorityQueue = priority_queue<Node*, vector<Node*>, NodeComparator>;
 
     NodePriorityQueue nodes(x); // nodes = MAKE-QUEUE
+    unordered_set<string> visited; // to account for repeat states
     
     int h_cost = (heuristic == 1) ? 0 : (heuristic == 2) ? misplaced_tiles(initial_state) : manhattan_distance(initial_state);
     Node* root = new Node(initial_state, 0, h_cost, nullptr); // MAKE-NODE(problem.INITIAL_STATE)
@@ -80,6 +83,12 @@ Node* general_search(const vector<vector<int>>& initial_state, int heuristic) { 
         nodes.pop();
 
         expanded_nodes++;
+
+        string state_str = state_to_string(node->state);
+        if (visited.find(state_str) != visited.end()) {
+            continue;
+        }
+        visited.insert(state_str);
 
         if (node->state == GOAL_STATE) {
             auto end_time = std::chrono::high_resolution_clock::now();
@@ -107,6 +116,17 @@ int misplaced_tiles(const vector<vector<int>>& state) {
         }
     }
     return count;
+}
+
+// converts puzzle states into string representations
+string state_to_string(const vector<vector<int>>& state) {
+    string state_str;
+    for (const auto& row : state) {
+        for (int num : row) {
+            state_str += to_string(num) + ',';
+        }
+    }
+    return state_str;
 }
 
 // manhattan distance heuristic
